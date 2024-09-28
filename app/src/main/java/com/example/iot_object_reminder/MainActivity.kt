@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity() {
     private val webSocketListener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
             runOnUiThread {
-                Toast.makeText(this@MainActivity, "웹소켓 연결 성공", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "웹소켓 연결 성공!", Toast.LENGTH_SHORT).show()
             }
         }
 
