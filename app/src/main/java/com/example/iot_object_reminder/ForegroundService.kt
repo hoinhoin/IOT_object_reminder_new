@@ -1,7 +1,6 @@
 package com.example.iot_object_reminder
 
 import android.annotation.SuppressLint
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -64,10 +63,17 @@ class WebSocketForegroundService : Service() {
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
-            // WebSocket으로 받은 메시지 처리
-            val intent = Intent("RFID_DATA")
-            intent.putExtra("rfidData", text)
-            sendBroadcast(intent)
+            // WebSocket으로 받은 메시지 직접 처리
+            when (text) {
+                "0000" -> {
+                    // '0000' 메시지를 수신했을 때의 로직
+                    startDeviceCheck()  // 여기서 5초 타이머 시작
+                }
+                "1111", "2222" -> {
+                    // '1111' 또는 '2222' 수신 시 로직
+                    stopDeviceCheck()  // 타이머가 동작 중이면 멈춤
+                }
+            }
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -77,6 +83,53 @@ class WebSocketForegroundService : Service() {
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             webSocket.close(1000, null)
         }
+    }
+
+    private var isCheckingForDevices = false
+    private var checkTimer: Runnable? = null
+
+    // '0000' 수신 후 5초간 '1111' 또는 '2222'가 수신되지 않으면 알림을 보냄
+    private fun startDeviceCheck() {
+        if (!isCheckingForDevices) {
+            isCheckingForDevices = true
+            checkTimer = Runnable {
+                if (isCheckingForDevices) {
+                    sendMissingDeviceNotification()
+                    stopDeviceCheck()
+                }
+            }
+            // 5초 후에 확인 (메인 스레드의 핸들러 사용)
+            android.os.Handler(mainLooper).postDelayed(checkTimer!!, 5000)
+        }
+    }
+
+    // '1111' 또는 '2222'가 수신되면 타이머 멈춤
+    private fun stopDeviceCheck() {
+        isCheckingForDevices = false
+        checkTimer?.let {
+            android.os.Handler(mainLooper).removeCallbacks(it)
+        }
+        checkTimer = null
+    }
+
+    private fun sendMissingDeviceNotification() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "missingDeviceChannel"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId, "Missing Device Channel", NotificationManager.IMPORTANCE_HIGH
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setContentTitle("Missing Device")
+            .setContentText("5초 내에 연결되지 않은 기기가 있습니다.")
+            .setSmallIcon(R.drawable.ic_notification)
+            .build()
+
+        notificationManager.notify(2, notification)
     }
 
     override fun onBind(intent: Intent?): IBinder? {
