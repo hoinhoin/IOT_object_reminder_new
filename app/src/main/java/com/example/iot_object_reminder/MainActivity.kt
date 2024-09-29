@@ -1,9 +1,15 @@
 package com.example.iot_object_reminder
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
@@ -33,10 +39,33 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
+            Log.d("WebSocket", "Received message: $text")
+            showNotification("New WebSocket message", text) // 메시지 수신 시 알림 표시
             runOnUiThread {
                 // CheckSignal.updateRFIDData(text)
             }
         }
+
+        private fun showNotification(title: String, message: String) {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channelId = "webSocketMessageChannel"
+
+            val channel = NotificationChannel(
+                channelId,
+                "WebSocket Message Channel",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            notificationManager.createNotificationChannel(channel)
+
+            val notification = NotificationCompat.Builder(this, channelId)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setSmallIcon(R.drawable.ic_notification)
+                .build()
+
+            notificationManager.notify(1, notification)
+        }
+
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             runOnUiThread {
