@@ -1,5 +1,6 @@
 package com.example.iot_object_reminder
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -15,11 +16,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // ForegroundService 시작
+        val serviceIntent = Intent(this, WebSocketForegroundService::class.java)
+        startService(serviceIntent)
+
         // 웹소켓 매니저 초기화 및 연결 설정
         webSocketManager = WebSocketManager(this, webSocketListener)
         webSocketManager.initWebSocket("ws://192.168.4.1:8080")
-
-
     }
 
     private val webSocketListener = object : WebSocketListener() {
@@ -29,9 +32,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        override fun onMessage(webSocket: WebSocket, text: String) { //웹소켓(WebSocket) 통신을 통해 서버로부터 받은 메시지를 처리
+        override fun onMessage(webSocket: WebSocket, text: String) {
             runOnUiThread {
-                //CheckSignal.updateRFIDData(text)
+                // CheckSignal.updateRFIDData(text)
             }
         }
 
@@ -49,10 +52,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-
     override fun onDestroy() {
         super.onDestroy()
+
+        // ForegroundService 종료
+        val stopIntent = Intent(this, WebSocketForegroundService::class.java)
+        stopService(stopIntent)
+
         // 액티비티 종료 시 웹소켓 연결 닫기
         webSocketManager.closeConnection()
     }
