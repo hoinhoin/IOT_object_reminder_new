@@ -50,14 +50,17 @@ class MainActivity : AppCompatActivity() {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val channelId = "webSocketMessageChannel"
 
-            val channel = NotificationChannel(
-                channelId,
-                "WebSocket Message Channel",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-            notificationManager.createNotificationChannel(channel)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    channelId,
+                    "WebSocket Message Channel",
+                    NotificationManager.IMPORTANCE_DEFAULT
+                )
+                notificationManager.createNotificationChannel(channel)
+            }
 
-            val notification = NotificationCompat.Builder(this, channelId)
+            // Use this@MainActivity to refer to the context of the outer class
+            val notification = NotificationCompat.Builder(this@MainActivity, channelId)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setSmallIcon(R.drawable.ic_notification)
@@ -65,6 +68,7 @@ class MainActivity : AppCompatActivity() {
 
             notificationManager.notify(1, notification)
         }
+
 
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
