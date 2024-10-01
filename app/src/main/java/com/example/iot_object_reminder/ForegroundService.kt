@@ -23,9 +23,9 @@ class WebSocketForegroundService : Service() {
     private var isCheckingForDevices = false
     private var checkTimer: Runnable? = null
 
-    private var belonging0:String = "물건1"
-    private var belonging1:String = "물건2"
-    private var belonging2:String = "물건3"
+    private var belonging0:String = "물건0"
+    private var belonging1:String = "물건1"
+    private var belonging2:String = "물건2"
 
     override fun onCreate() {
         super.onCreate()
@@ -74,20 +74,17 @@ class WebSocketForegroundService : Service() {
         override fun onMessage(webSocket: WebSocket, text: String) {
             // WebSocket으로 받은 메시지 직접 처리
             when (text) {
-                "0000" -> {
-                    // '0000' 메시지를 수신했을 때의 로직 (5초 타이머 시작)
-                    //received0000 = true
-                    startDeviceCheck()
+                "0000" -> { //0000신호 받으면
+                    received0000 = true
+                    startDeviceCheck() //1111,2222 신호 받았는지 확인
                 }
-                "1111" -> {
+                "1111" -> { //1111신호 받으면
                     received1111 = true
-                    //startDeviceCheck()
-                    checkIfComplete()
+                    startDeviceCheck()
                 }
                 "2222" -> {
                     received2222 = true
-                    //startDeviceCheck()
-                    checkIfComplete()
+                    startDeviceCheck()
                 }
             }
         }
@@ -105,30 +102,76 @@ class WebSocketForegroundService : Service() {
     private fun startDeviceCheck() {
         if (!isCheckingForDevices) {
             isCheckingForDevices = true
-            received1111 = false
-            received2222 = false
+            if (received0000){
+                received1111 = false
+                received2222 = false
+            }
+            else if (received1111){
+                received0000 = false
+                received2222 = false
+            }
+            else if (received2222){
+                received0000 = false
+                received1111 = false
+            }
 
             checkTimer = Runnable {
                 if (isCheckingForDevices) {
-                    // 5초 후에도 isCheckingForDevices가 true라면 각 경우에 맞는 알림을 보냄
-                    when {
-                        !received1111 && !received2222 -> {
-                            sendNotification("물건을 모두 두고 왔습니다.")
+                    // 첫 번째 경우: 0000이 수신된 경우
+                    if (received0000) {
+
+                        if (!received1111 && !received2222) {
+                            sendNotification(belonging1 + ", " + belonging2 + " 두고 왔습니다.")
                         }
-                        !received1111 -> {
+                        else if (!received1111) {
+                            // 1111가 수신되지 않았을 경우
                             sendNotification(belonging1 + " 두고 왔습니다.")
                         }
-                        !received2222 -> {
+                        else if (!received2222) {
+                            // 2222가 수신되지 않았을 경우
                             sendNotification(belonging2 + " 두고 왔습니다.")
                         }
+                        stopDeviceCheck()
+                        // 모든 신호가 수신되었으면 알림 X
                     }
-                    stopDeviceCheck()  // 타이머 종료
+                    // 두 번째 경우: 1111이 수신된 경우
+                    else if (received1111) {
+                        if (!received0000 && !received2222) {
+                            sendNotification(belonging0 + ", " + belonging2 + " 두고 왔습니다.")
+
+                        } else if (!received2222) {
+                            // 2222가 수신되지 않았을 경우
+                            sendNotification(belonging2 + " 두고 왔습니다.")
+                        } else if (!received0000) {
+                            // 0000이 수신되지 않았을 경우
+                            sendNotification(belonging0 + " 두고 왔습니다.")
+                        }
+                        stopDeviceCheck()
+                        // 모든 신호가 수신되었으면 알림 X
+
+                    }
+                    // 세 번째 경우: 2222가 수신된 경우
+                    else if (received2222) {
+                        if (!received0000 && !received1111) {
+                            sendNotification(belonging0 + ", " + belonging1 + " 두고 왔습니다.")
+                        } else if (!received1111) {
+                            // 1111이 수신되지 않았을 경우
+                            sendNotification(belonging1 + " 두고 왔습니다.")
+                        } else if (!received0000) {
+                            // 0000이 수신되지 않았을 경우
+                            sendNotification(belonging0 + " 두고 왔습니다.")
+                        }
+                    }
+
+                    // 타이머 종료
+                    stopDeviceCheck()
                 }
             }
             // 5초 후에 확인 (메인 스레드의 핸들러 사용)
             android.os.Handler(mainLooper).postDelayed(checkTimer!!, 5000)
         }
     }
+
 
     // 두 신호가 모두 수신되었는지 확인하고 타이머 중지
     private fun checkIfComplete() { //두 신호가 모두 들어왔을 때 타이머를 중지하여 불필요한 알림이 발생하지 않도록 함
