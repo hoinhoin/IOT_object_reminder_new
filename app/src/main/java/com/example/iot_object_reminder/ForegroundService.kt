@@ -17,10 +17,15 @@ import okhttp3.WebSocketListener
 class WebSocketForegroundService : Service() {
 
     private lateinit var webSocketManager: WebSocketManager
+    private var received0000 = false
     private var received1111 = false
     private var received2222 = false
     private var isCheckingForDevices = false
     private var checkTimer: Runnable? = null
+
+    private var belonging0:String = "물건1"
+    private var belonging1:String = "물건2"
+    private var belonging2:String = "물건3"
 
     override fun onCreate() {
         super.onCreate()
@@ -71,14 +76,17 @@ class WebSocketForegroundService : Service() {
             when (text) {
                 "0000" -> {
                     // '0000' 메시지를 수신했을 때의 로직 (5초 타이머 시작)
+                    //received0000 = true
                     startDeviceCheck()
                 }
                 "1111" -> {
                     received1111 = true
+                    //startDeviceCheck()
                     checkIfComplete()
                 }
                 "2222" -> {
                     received2222 = true
+                    //startDeviceCheck()
                     checkIfComplete()
                 }
             }
@@ -108,10 +116,10 @@ class WebSocketForegroundService : Service() {
                             sendNotification("물건을 모두 두고 왔습니다.")
                         }
                         !received1111 -> {
-                            sendNotification("1111을 두고 왔습니다.")
+                            sendNotification(belonging1 + " 두고 왔습니다.")
                         }
                         !received2222 -> {
-                            sendNotification("2222를 두고 왔습니다.")
+                            sendNotification(belonging2 + " 두고 왔습니다.")
                         }
                     }
                     stopDeviceCheck()  // 타이머 종료
