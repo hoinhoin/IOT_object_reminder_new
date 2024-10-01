@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
                 val channel = NotificationChannel(
                     channelId,
                     "WebSocket Message Channel",
-                    NotificationManager.IMPORTANCE_DEFAULT
+                    NotificationManager.IMPORTANCE_HIGH
                 )
                 notificationManager.createNotificationChannel(channel)
             }

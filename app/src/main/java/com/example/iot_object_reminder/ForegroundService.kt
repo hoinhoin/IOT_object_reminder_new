@@ -17,6 +17,10 @@ import okhttp3.WebSocketListener
 class WebSocketForegroundService : Service() {
 
     private lateinit var webSocketManager: WebSocketManager
+    private var received1111 = false
+    private var received2222 = false
+    private var isCheckingForDevices = false
+    private var checkTimer: Runnable? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -66,12 +70,16 @@ class WebSocketForegroundService : Service() {
             // WebSocket으로 받은 메시지 직접 처리
             when (text) {
                 "0000" -> {
-                    // '0000' 메시지를 수신했을 때의 로직
-                    startDeviceCheck()  // 여기서 5초 타이머 시작
+                    // '0000' 메시지를 수신했을 때의 로직 (5초 타이머 시작)
+                    startDeviceCheck()
                 }
-                "1111", "2222" -> {
-                    // '1111' 또는 '2222' 수신 시 로직
-                    stopDeviceCheck()  // 타이머가 동작 중이면 멈춤
+                "1111" -> {
+                    received1111 = true
+                    checkIfComplete()
+                }
+                "2222" -> {
+                    received2222 = true
+                    checkIfComplete()
                 }
             }
         }
@@ -85,17 +93,28 @@ class WebSocketForegroundService : Service() {
         }
     }
 
-    private var isCheckingForDevices = false
-    private var checkTimer: Runnable? = null
-
     // '0000' 수신 후 5초간 '1111' 또는 '2222'가 수신되지 않으면 알림을 보냄
     private fun startDeviceCheck() {
         if (!isCheckingForDevices) {
             isCheckingForDevices = true
+            received1111 = false
+            received2222 = false
+
             checkTimer = Runnable {
                 if (isCheckingForDevices) {
-                    sendMissingDeviceNotification()
-                    stopDeviceCheck()
+                    // 5초 후에도 isCheckingForDevices가 true라면 각 경우에 맞는 알림을 보냄
+                    when {
+                        !received1111 && !received2222 -> {
+                            sendNotification("물건을 모두 두고 왔습니다.")
+                        }
+                        !received1111 -> {
+                            sendNotification("1111을 두고 왔습니다.")
+                        }
+                        !received2222 -> {
+                            sendNotification("2222를 두고 왔습니다.")
+                        }
+                    }
+                    stopDeviceCheck()  // 타이머 종료
                 }
             }
             // 5초 후에 확인 (메인 스레드의 핸들러 사용)
@@ -103,7 +122,14 @@ class WebSocketForegroundService : Service() {
         }
     }
 
-    // '1111' 또는 '2222'가 수신되면 타이머 멈춤
+    // 두 신호가 모두 수신되었는지 확인하고 타이머 중지
+    private fun checkIfComplete() { //두 신호가 모두 들어왔을 때 타이머를 중지하여 불필요한 알림이 발생하지 않도록 함
+        if (received1111 && received2222) {
+            stopDeviceCheck()
+        }
+    }
+
+    // 타이머를 멈추고 플래그 초기화
     private fun stopDeviceCheck() {
         isCheckingForDevices = false
         checkTimer?.let {
@@ -112,7 +138,8 @@ class WebSocketForegroundService : Service() {
         checkTimer = null
     }
 
-    private fun sendMissingDeviceNotification() {
+    // 알림을 보내는 함수
+    private fun sendNotification(message: String) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "missingDeviceChannel"
 
@@ -125,7 +152,7 @@ class WebSocketForegroundService : Service() {
 
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Missing Device")
-            .setContentText("5초 내에 연결되지 않은 기기가 있습니다.")
+            .setContentText(message)
             .setSmallIcon(R.drawable.ic_notification)
             .build()
 
