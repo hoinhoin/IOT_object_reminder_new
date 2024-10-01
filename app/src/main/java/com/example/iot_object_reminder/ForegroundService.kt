@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import okhttp3.Response
 import okhttp3.WebSocket
@@ -173,13 +174,6 @@ class WebSocketForegroundService : Service() {
     }
 
 
-    // 두 신호가 모두 수신되었는지 확인하고 타이머 중지
-    private fun checkIfComplete() { //두 신호가 모두 들어왔을 때 타이머를 중지하여 불필요한 알림이 발생하지 않도록 함
-        if (received1111 && received2222) {
-            stopDeviceCheck()
-        }
-    }
-
     // 타이머를 멈추고 플래그 초기화
     private fun stopDeviceCheck() {
         isCheckingForDevices = false
@@ -189,8 +183,26 @@ class WebSocketForegroundService : Service() {
         checkTimer = null
     }
 
+    // 화면을 깨우는 함수
+    private fun wakeApp() {
+        val pm = applicationContext.getSystemService(POWER_SERVICE) as PowerManager
+        val screenIsOn = pm.isInteractive // 화면이 켜져 있는지 확인
+        if (!screenIsOn) {
+            val wakeLockTag = packageName + "WAKELOCK"
+            val wakeLock = pm.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK or
+                        PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                        PowerManager.ON_AFTER_RELEASE, wakeLockTag
+            )
+            wakeLock.acquire() // 화면을 켬
+            wakeLock.release() // 해제하면 화면은 기기 설정에 따라 다시 꺼짐
+        }
+    }
+
     // 알림을 보내는 함수
     private fun sendNotification(message: String) {
+        wakeApp()//알림 보낼 때 화면 켜기
+
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "missingDeviceChannel"
 
