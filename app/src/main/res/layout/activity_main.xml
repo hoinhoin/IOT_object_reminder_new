@@ -3,8 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".RFIDReminderActivity">
+    android:layout_height="match_parent">
+    <!--  tools:context=".RFIDReminderActivity">-->
 
     <!-- 상단 앱 바 -->
     <androidx.appcompat.widget.Toolbar
@@ -37,6 +37,19 @@
         android:divider="@android:color/darker_gray"
         android:dividerHeight="1dp"
         tools:ignore="UnknownId" />
+
+    <!-- 웹소켓 상태 표시 TextView -->
+    <TextView
+        android:id="@+id/websocket_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:gravity="center"
+        android:text="웹소켓 연결 시도 진행중"
+        android:textSize="16sp"
+        android:textColor="#000000"
+        android:padding="16dp"
+        android:background="@android:color/white" />
 
 
 
