@@ -169,7 +169,7 @@ class WebSocketForegroundService : Service() {
                 }
             }
             // 5초 후에 확인 (메인 스레드의 핸들러 사용)
-            android.os.Handler(mainLooper).postDelayed(checkTimer!!, 5000)
+            android.os.Handler(mainLooper).postDelayed(checkTimer!!, 4200)
         }
     }
 
